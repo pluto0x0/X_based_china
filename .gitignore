@@ -1,0 +1,3 @@
+config.*
+*.ipynb
+__pycache__/
