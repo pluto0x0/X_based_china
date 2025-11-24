@@ -17,8 +17,7 @@ You will need your own key for the following API's from RapidAPI:
 - [Twttr API](https://rapidapi.com/davethebeast/api/twitter241) (~20 Requests / Account)
 - [Twitter API](https://rapidapi.com/alexanderxbx/api/twitter-api45) (~1 Requests / 50 Account)
 
-Rename `config.default.py` to `config.py`
-Paste the key in it.
+Rename `config.default.py` to `config.py` and paste the key in it.
 
 ### 3. Run
 
