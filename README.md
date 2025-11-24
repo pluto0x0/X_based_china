@@ -14,10 +14,12 @@ pip install aiohttp_client_cache loguru
 
 You will need your own key for the following API's from RapidAPI:
 
-- [Twttr API](https://rapidapi.com/davethebeast/api/twitter241) (~20 Requests / Account)
-- [Twitter API](https://rapidapi.com/alexanderxbx/api/twitter-api45) (~1 Requests / 50 Account)
+- [Twttr API](https://rapidapi.com/davethebeast/api/twitter241)
+- [Twitter API](https://rapidapi.com/alexanderxbx/api/twitter-api45)
 
 Rename `config.default.py` to `config.py` and paste the key in it.
+
+See [Results & Statistics](#Results_&_Statistics) for API usage statistics.
 
 ### 3. Run
 
@@ -57,6 +59,10 @@ max_followings = 300
 Starting from seed accounts, Breadth-First Search for X accounts based on their following list.
 
 Async http requests are cached with SQLite DB.
+
+## Results & Statistics
+
+- RUN #1: 5,200 results with **17,980** Twttr API request and **1,000** Twitter API requests
 
 ## License
 
