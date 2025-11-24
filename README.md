@@ -1,5 +1,7 @@
 # BFS scraper for X accounts based in China
 
+Online Demo: <https://pluto0x0.github.io/X_based_china/>
+
 ## Run
 
 ### 1. Install Requirements
@@ -56,6 +58,8 @@ max_followings = 300
 ## How It Works
 
 Starting from seed users, Breadth-First Search for X users based on their following list.
+
+Async http requests are cached with SQLite DB.
 
 ## License
 
