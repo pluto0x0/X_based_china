@@ -1,6 +1,6 @@
 KEY = ""
 
-seed_users = [
+seed_accounts = [
     "linboweibu17"
 ]
 

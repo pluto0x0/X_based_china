@@ -27,7 +27,7 @@ async def get_followings(session, username, maxlen=400):
             async with session.get(url, headers=headers, params=params) as resp:
                 data = await resp.json()
         except Exception as e:
-            logger.error(f"Error fetching followings: {e}")
+            logger.warning(f"Error fetching followings: {e}")
             break
         if data.get("status") != "ok":
             break
@@ -57,16 +57,16 @@ async def get_userinfo(session, usernames):
                         "result"
                     ]
                 except Exception as e:
-                    logger.error(f"Error fetching userinfo for {username}: {data}")
+                    logger.warning(f"Error fetching userinfo for {username}: {data}")
                 else:
                     results[username] = info
         except Exception as e:
-            logger.error(f"Error fetching userinfo for {username}: {e}")
+            logger.warning(f"Error fetching userinfo for {username}: {e}")
     return results
 
 
 async def main():
-    queue = deque(seed_users)
+    queue = deque(seed_accounts)
     userset = set()
     try:
         with open(output_file, "r") as f:
@@ -100,7 +100,7 @@ async def main():
                                 f.flush()
                                 userset.add(user)
                                 hit += 1
-                                logger.info(f"Found China-based account: {user}")
+                                logger.debug(f"Found China-based account: {user}")
                             if user not in queue:
                                 queue.append(user)
                     except KeyError:
