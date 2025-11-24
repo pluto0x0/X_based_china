@@ -312,7 +312,7 @@ def main():
     if len(sys.argv) >= 3:
         out_dir = Path(sys.argv[2])
     else:
-        out_dir = Path("output")
+        out_dir = Path("docs")
 
     out_dir.mkdir(parents=True, exist_ok=True)
 
