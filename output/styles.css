@@ -1,0 +1,166 @@
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    background: #020617;
+    color: #e5e7eb;
+    -webkit-font-smoothing: antialiased;
+}
+
+.page {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 16px 12px 40px;
+}
+
+.page-header {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 12px;
+}
+
+.page-header h1 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: #f9fafb;
+}
+
+.page-subtitle {
+    margin: 0;
+    font-size: 12px;
+    color: #9ca3af;
+}
+
+.user-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 8px;
+}
+
+/* 卡片本身尽量紧凑 */
+.user-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px;
+    border-radius: 10px;
+    background: radial-gradient(circle at top left, rgba(56,189,248,0.10), transparent 55%) #020617;
+    border: 1px solid rgba(148,163,184,0.2);
+    box-shadow: 0 6px 18px rgba(15,23,42,0.70);
+    transition: transform 0.12s ease-out, box-shadow 0.12s ease-out, border-color 0.12s ease-out, background 0.12s ease-out;
+}
+
+.user-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 28px rgba(15,23,42,0.85);
+    border-color: rgba(94,234,212,0.7);
+    background: radial-gradient(circle at top left, rgba(94,234,212,0.16), transparent 55%) #020617;
+}
+
+.user-avatar-wrap {
+    flex: 0 0 auto;
+}
+
+.user-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 999px;
+    object-fit: cover;
+    border: 1px solid rgba(148,163,184,0.6);
+    background: #020617;
+}
+
+.user-content {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.user-title-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.user-name {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #e5e7eb;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.user-handle {
+    font-size: 12px;
+    color: #9ca3af;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 元信息一行展示，紧凑 */
+.user-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 2px;
+    font-size: 11px;
+    color: #9ca3af;
+}
+
+.user-meta span {
+    white-space: nowrap;
+}
+
+.user-id {
+    margin-top: 2px;
+    font-size: 11px;
+    color: #64748b;
+    word-break: break-all;
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+    border-radius: 999px;
+    font-size: 10px;
+    line-height: 1.4;
+}
+
+.badge-verified {
+    background: linear-gradient(135deg, #38bdf8, #22c55e);
+    color: #0f172a;
+    font-weight: 700;
+    min-width: 16px;
+    min-height: 16px;
+}
+
+/* 小屏适配 */
+@media (max-width: 640px) {
+    .page {
+        padding-inline: 10px;
+    }
+    .user-card {
+        padding: 8px;
+    }
+    .user-avatar {
+        width: 40px;
+        height: 40px;
+    }
+}

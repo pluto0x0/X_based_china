@@ -1,3 +1,4 @@
-config.*
+config.py
 *.ipynb
 __pycache__/
+cache.*
