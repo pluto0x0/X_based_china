@@ -50,7 +50,7 @@ max_followings = 300
 
 - `seed_accounts`: Seed accounts in the initial queue
 - `max_hit = 10000`: Exit when finding 10000 accounts, 0 = no limit
-- `output_file`: Outout file name
+- `output_file`: Output file name
 - `max_followings`: Max number of accounts fetched from a following list, 0 = no limit
 
 ## How It Works
