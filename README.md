@@ -19,7 +19,7 @@ You will need your own key for the following API's from RapidAPI:
 
 Rename `config.default.py` to `config.py` and paste the key in it.
 
-See [Results & Statistics](#Results_&_Statistics) for API usage statistics.
+See [Results & Statistics](#results--statistics) for API usage statistics.
 
 ### 3. Run
 
