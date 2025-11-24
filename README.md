@@ -36,7 +36,7 @@ python render.py china.jsonl
 
 ## Configuration
 
-Edit `config.py`
+In `config.py`
 
 ```python
 seed_accounts = [
