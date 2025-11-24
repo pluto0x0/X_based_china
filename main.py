@@ -5,7 +5,7 @@ from aiohttp_client_cache import SQLiteBackend, CacheBackend
 from aiohttp_client_cache.session import CachedSession
 from pprint import pprint
 from collections import deque
-from config import KEY
+from config import *
 from loguru import logger
 
 cache = SQLiteBackend("cache.db")
@@ -65,13 +65,8 @@ async def get_userinfo(session, usernames):
     return results
 
 
-seed_ids = ["linboweibu17"]
-max_hit = 10000
-output_file = "china.jsonl"
-
-
 async def main():
-    queue = deque(seed_ids)
+    queue = deque(seed_users)
     userset = set()
     try:
         with open(output_file, "r") as f:
@@ -87,7 +82,9 @@ async def main():
             while queue:
                 current_id = queue.popleft()
                 logger.info(f"Processing: {current_id}")
-                followings = await get_followings(session, current_id, maxlen=300)
+                followings = await get_followings(
+                    session, current_id, maxlen=max_followings
+                )
                 logger.info(f"Found {len(followings)} followings for {current_id}")
                 usernames = [
                     user["screen_name"] for user in followings if user["screen_name"]
@@ -108,7 +105,7 @@ async def main():
                                 queue.append(user)
                     except KeyError:
                         pass
-                if hit >= max_hit:
+                if max_hit > 0 and hit >= max_hit:
                     logger.info(f"Reached max hit limit of {max_hit}. Stopping.")
                     break
                 logger.info(
