@@ -104,8 +104,8 @@ async def expand_user(session, file, username, cursor=None, sample=False):
     global queue, userset
 
     followings, cursor = await get_followings(session, username, cursor=cursor)
-    usernames = [user["screen_name"] for user in followings if user["screen_name"]]
-    about_info = await get_userinfo(session, usernames)
+    usernames = set(user["screen_name"] for user in followings if user["screen_name"])
+    about_info = await get_userinfo(session, usernames - userset)
     n_about_info = len(about_info)
     n_hit = n_new = 0
     expand_tasks = []
@@ -142,7 +142,7 @@ async def expand_user(session, file, username, cursor=None, sample=False):
     if expand_tasks:
         await asyncio.gather(*expand_tasks)
 
-    rate = n_new / n_about_info if n_about_info > 0 else 0.0 # istead of n_hit
+    rate = n_new / len(usernames) if n_about_info > 0 else 0.0 # istead of n_hit
     if not sample and cursor is not False:
         queue.put((-rate, (username, cursor)))
 
