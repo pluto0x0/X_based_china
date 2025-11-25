@@ -7,7 +7,7 @@ Online Demo: <https://pluto0x0.github.io/X_based_china/>
 ### 1. Install Requirements
 
 ```shell
-pip install aiohttp_client_cache loguru
+pip install aiohttp_client_cache loguru aiolimiter
 ```
 
 ### 2. API Key
@@ -40,19 +40,21 @@ python render.py china.jsonl
 In `config.py`
 
 ```python
-seed_accounts = [
+SEED_ACCOUNTS = [
     "linboweibu17"
+    # "KunDong95265"
 ]
-
-max_hit = 10000
-output_file = "china.jsonl"
-max_followings = 300
+REQUESTS_PER_SECOND = 9
+MAX_HIT = 100000
+OUTPUT_FILE = "china.jsonl"
+MAX_FOLLOWINGS = 800
 ```
 
-- `seed_accounts`: Seed accounts in the initial queue
-- `max_hit = 10000`: Exit when finding 10000 accounts, 0 = no limit
-- `output_file`: Output file name
-- `max_followings`: Max number of accounts fetched from a following list, 0 = no limit
+- `SEED_ACCOUNTS`: Seed accounts in the initial queue
+- `REQUESTS_PER_SECOND`: Maximum number of requests per sec
+- `MAX_HIT = 100000`: Exit when finding 100000 accounts, 0 = no limit
+- `OUTPUT_FILE`: Output file name
+- `MAX_FOLLOWINGS`: Max number of accounts fetched from a following list, 0 = no limit
 
 ## How It Works
 

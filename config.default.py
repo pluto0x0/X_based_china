@@ -1,9 +1,9 @@
 KEY = ""
 
-seed_accounts = [
+SEED_ACCOUNTS = [
     "linboweibu17"
 ]
-
-max_hit = 10000
-output_file = "china.jsonl"
-max_followings = 300
+REQUESTS_PER_SECOND = 9
+MAX_HIT = 100000
+OUTPUT_FILE = "china.jsonl"
+MAX_FOLLOWINGS = 800
