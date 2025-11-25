@@ -164,3 +164,33 @@ body {
         height: 40px;
     }
 }
+
+.pager {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin: 8px 0 12px;
+    font-size: 12px;
+}
+
+.pager-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1px solid rgba(148,163,184,0.4);
+    color: #e5e7eb;
+    text-decoration: none;
+    background: rgba(15,23,42,0.8);
+}
+
+.pager-link:hover {
+    border-color: rgba(94,234,212,0.9);
+}
+
+.pager-link-current {
+    background: linear-gradient(135deg, #38bdf8, #22c55e);
+    color: #0f172a;
+    font-weight: 600;
+}

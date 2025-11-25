@@ -6,6 +6,8 @@ import sys
 from pathlib import Path
 from datetime import datetime
 
+PAGE_SIZE = 200  # 每页用户数量，可自行调整
+
 def load_users(jsonl_path: Path):
     users = []
     with jsonl_path.open("r", encoding="utf-8") as f:
@@ -31,7 +33,44 @@ def format_created_at(raw):
     except Exception:
         return raw
 
-def build_html(users, css_filename="styles.css", title="Twitter Accounts Based in China"):
+def build_pagination_nav(page_num: int, total_pages: int, page_prefix: str = "page"):
+    """生成上一页 / 下一页 / 页码的导航 HTML。"""
+    if total_pages <= 1:
+        return ""
+
+    links = []
+
+    # 上一页
+    if page_num > 1:
+        prev_page = page_num - 1
+        prev_href = "index.html" if prev_page == 1 else f"{page_prefix}{prev_page}.html"
+        links.append(f'<a class="pager-link" href="{prev_href}">« 上一页</a>')
+
+    # 中间页码
+    for i in range(1, total_pages + 1):
+        if i == page_num:
+            links.append(f'<span class="pager-link pager-link-current">{i}</span>')
+        else:
+            href = "index.html" if i == 1 else f"{page_prefix}{i}.html"
+            links.append(f'<a class="pager-link" href="{href}">{i}</a>')
+
+    # 下一页
+    if page_num < total_pages:
+        next_page = page_num + 1
+        next_href = "index.html" if next_page == 1 else f"{page_prefix}{next_page}.html"
+        links.append(f'<a class="pager-link" href="{next_href}">下一页 »</a>')
+
+    return '<nav class="pager">' + "".join(links) + "</nav>"
+
+
+def build_html(
+    users,
+    css_filename="styles.css",
+    title="Twitter Accounts Lists",
+    page_num: int = 1,
+    total_pages: int = 1,
+    total_length: int = 0,
+):
     cards_html = []
 
     for u in users:
@@ -58,7 +97,6 @@ def build_html(users, css_filename="styles.css", title="Twitter Accounts Based i
         if is_blue_verified:
             verified_badge = '<span class="badge badge-verified" title="Verified">✔</span>'
 
-        # 额外信息行：只展示有值的字段，节省空间
         meta_items = []
         if created_at:
             meta_items.append(f"<span>注册：{created_at}</span>")
@@ -77,20 +115,24 @@ def build_html(users, css_filename="styles.css", title="Twitter Accounts Based i
         if rest_id:
             id_html = f'<div class="user-id">ID: {rest_id}</div>'
 
-        # 卡片 HTML
+        # ✅ 用户名和 @handle 可点击跳转
         card = f"""
         <article class="user-card">
             <div class="user-avatar-wrap">
-                <a href="https://twitter.com/{screen_name}" target="_blank">
+                <a href="https://twitter.com/{screen_name}" target="_blank" rel="noopener noreferrer">
                     <img src="{avatar_url}" alt="{display_name} avatar" loading="lazy" class="user-avatar" />
                 </a>
             </div>
             <div class="user-content">
                 <div class="user-title-row">
-                    <h2 class="user-name" title="{display_name}">{display_name}</h2>
+                    <h2 class="user-name" title="{display_name}">
+                        {display_name}
+                    </h2>
                     {verified_badge}
                 </div>
-                <div class="user-handle">@{screen_name}</div>
+                <div class="user-handle">
+                    @{screen_name}
+                </div>
                 {meta_html}
                 {id_html}
             </div>
@@ -100,33 +142,35 @@ def build_html(users, css_filename="styles.css", title="Twitter Accounts Based i
 
     cards_str = "\n".join(cards_html)
 
+    pager_html = build_pagination_nav(page_num, total_pages)
+
     html = f"""<!doctype html>
 <html lang="zh-CN">
 <head>
     <meta charset="utf-8">
-    <title>{title}</title>
+    <title>{title} - 第 {page_num} / {total_pages} 页</title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <link rel="stylesheet" href="{css_filename}">
 </head>
 <body>
     <div class="page">
         <header class="page-header">
-            <h1>
-            {title}
-            <a href="https://github.com/pluto0x0/X_based_china" target="_blank"><img src="https://img.shields.io/badge/GitHub-Repository-181717?style=flat-square&logo=github&logoColor=white" alt="GitHub Repository"></a>
-            </h1>
-            <p class="page-subtitle">共 {len(users)} 个用户</p>
+            <h1>{title} <a href="https://github.com/pluto0x0/X_based_china" target="_blank"><img src="https://img.shields.io/badge/GitHub-Repository-181717?style=flat-square&logo=github&logoColor=white" alt="GitHub Repository"></a></h1>
+            <p class="page-subtitle">共 {total_pages} 页 · 当前第 {page_num} 页 · 共 { total_length } 账号 · 本页 {len(users)} 账号</p>
         </header>
+        {pager_html}
         <main class="page-main">
             <section class="user-grid">
                 {cards_str}
             </section>
         </main>
+        {pager_html}
     </div>
 </body>
 </html>
 """
     return html
+
 
 def write_css(css_path: Path):
     css = r"""
@@ -296,6 +340,36 @@ body {
         height: 40px;
     }
 }
+
+.pager {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin: 8px 0 12px;
+    font-size: 12px;
+}
+
+.pager-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1px solid rgba(148,163,184,0.4);
+    color: #e5e7eb;
+    text-decoration: none;
+    background: rgba(15,23,42,0.8);
+}
+
+.pager-link:hover {
+    border-color: rgba(94,234,212,0.9);
+}
+
+.pager-link-current {
+    background: linear-gradient(135deg, #38bdf8, #22c55e);
+    color: #0f172a;
+    font-weight: 600;
+}
 """
     css_path.write_text(css.strip() + "\n", encoding="utf-8")
 
@@ -319,16 +393,42 @@ def main():
     users = load_users(jsonl_path)
     print(f"读取到 {len(users)} 行用户数据")
 
+    if not users:
+        print("没有可用用户数据，未生成页面。")
+        sys.exit(0)
+
     css_filename = "styles.css"
-    html_path = out_dir / "index.html"
     css_path = out_dir / css_filename
-
     write_css(css_path)
-    html = build_html(users, css_filename=css_filename, title="Twitter Accounts Based in China")
-    html_path.write_text(html, encoding="utf-8")
 
-    print(f"已生成: {html_path}")
-    print(f"CSS 文件: {css_path}")
+    total_users = len(users)
+    total_pages = (total_users + PAGE_SIZE - 1) // PAGE_SIZE
+
+    for page_num in range(1, total_pages + 1):
+        start_idx = (page_num - 1) * PAGE_SIZE
+        end_idx = min(start_idx + PAGE_SIZE, total_users)
+        page_users = users[start_idx:end_idx]
+
+        html = build_html(
+            page_users,
+            css_filename=css_filename,
+            title="Twitter Accounts Based in China",
+            page_num=page_num,
+            total_pages=total_pages,
+            total_length=len(users),
+        )
+
+        # 第 1 页输出为 index.html，其余为 page2.html, page3.html...
+        if page_num == 1:
+            filename = out_dir / "index.html"
+        else:
+            filename = out_dir / f"page{page_num}.html"
+
+        filename.write_text(html, encoding="utf-8")
+        print(f"已生成: {filename}（用户 {start_idx} ~ {end_idx - 1}）")
+
+    print(f"分页完成：共 {total_pages} 页，每页 {PAGE_SIZE} 个用户（最后一页可能不足）")
+
 
 if __name__ == "__main__":
     main()
