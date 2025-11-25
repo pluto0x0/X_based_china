@@ -65,7 +65,7 @@ Async http requests are cached with SQLite DB.
 ## Results & Statistics
 
 - RUN #1: 5,200 results with **17,980** Twttr API request and **1,000** Twitter API requests
-- RUN #1: 4,200 results with **70,000** Twttr API request and **5,350** Twitter API requests
+- RUN #2: 4,200 results with **70,000** Twttr API request and **5,350** Twitter API requests
 
 ## License
 
