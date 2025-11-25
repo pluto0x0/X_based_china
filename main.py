@@ -7,18 +7,18 @@ from pprint import pprint
 from collections import deque
 from config import *
 from loguru import logger
+from queue import PriorityQueue
 
 cache = SQLiteBackend("cache.db")
 
 
-async def get_followings(session, username, maxlen=400):
+async def get_followings(session, username, maxlen=400, cursor=None, sample=False):
     headers = {
         "x-rapidapi-key": KEY,
         "x-rapidapi-host": "twitter-api45.p.rapidapi.com",
     }
     url = "https://twitter-api45.p.rapidapi.com/following.php"
     followings = []
-    cursor = None
     while True:
         params = {"screenname": username}
         if cursor:
@@ -32,10 +32,14 @@ async def get_followings(session, username, maxlen=400):
         if data.get("status") != "ok":
             break
         followings.extend(data.get("following", []))
-        if not data.get("more_users") or (maxlen > 0 and len(followings) >= maxlen):
+        cursor = data.get("next_cursor", None)
+        if (
+            not data.get("more_users")
+            or (maxlen > 0 and len(followings) >= maxlen)
+            or sample
+        ):
             break
-        cursor = data.get("next_cursor")
-    return followings
+    return followings, cursor
 
 
 async def get_userinfo(session, usernames):
@@ -65,51 +69,75 @@ async def get_userinfo(session, usernames):
     return results
 
 
-async def main():
-    queue = deque(seed_accounts)
-    userset = set()
+queue = PriorityQueue()
+userset = set()
+
+
+def init():
+    global queue, userset
+    for account in SEED_ACCOUNTS:
+        queue.put((-1.0, (account, None)))  # (priority, (username, cursor))
     try:
-        with open(output_file, "r") as f:
+        with open(OUTPUT_FILE, "r") as f:
             for line in f:
                 record = json.loads(line)
                 userset.add(record["username"])
     except FileNotFoundError:
-        pass
-    logger.info(f"Loaded {len(userset)} existing users from {output_file}")
-    hit = 0
-    with open(output_file, "a") as f:
+        logger.info(f"No existing output file found. Starting fresh.")
+    logger.info(f"Loaded {len(userset)} existing users from {OUTPUT_FILE}")
+
+
+async def expand_user(session, file, username, cursor, sample=False):
+    global queue, userset
+    followings, cursor = await get_followings(
+        session, username, maxlen=MAX_FOLLOWINGS, cursor=cursor, sample=sample
+    )
+    n_followings = len(followings)
+    usernames = [user["screen_name"] for user in followings if user["screen_name"]]
+    n_usernames = len(usernames)
+    about_info = await get_userinfo(session, usernames)
+    n_about_info = len(about_info)
+    n_hit = n_new = 0
+    for user, info in about_info.items():
+        try:
+            if info["about_profile"]["account_based_in"] == "China":
+                n_hit += 1
+                if user not in userset:
+                    record = {"username": user, "info": info}
+                    file.write(json.dumps(record) + "\n")
+                    file.flush()
+                    userset.add(user)
+                    n_new += 1
+                    logger.debug(f"Found new China-based account: {user}")
+                exists_queue = any(user == item[1][0] for item in queue.queue)
+                if not sample and not exists_queue:
+                    tot, hit, user_cursor = await expand_user(session, file, user, None, sample=True)
+                    rate = hit / tot if tot > 0 else 0
+                    queue.put((-rate, (user, user_cursor)))  # (-rate, (username, cursor))
+                    logger.debug(f"Enqueued {user}, priority: {rate:.2%}")
+        except KeyError:
+            pass
+    # logger.info(
+    #     f"Statistics: username: {n_usernames/n_followings:.2%}, about info: {n_about_info/n_usernames:.2%}, hit: {n_hit/n_about_info:.2%}, new: {n_new/n_hit:.2%}"
+    # )
+    return n_about_info, n_hit, cursor
+
+
+async def main():
+    global queue, userset
+    init()
+
+    with open(OUTPUT_FILE, "a") as f:
         async with CachedSession(cache=cache) as session:
             while queue:
-                current_id = queue.popleft()
-                logger.info(f"Processing: {current_id}")
-                followings = await get_followings(
-                    session, current_id, maxlen=max_followings
-                )
-                logger.info(f"Found {len(followings)} followings for {current_id}")
-                usernames = [
-                    user["screen_name"] for user in followings if user["screen_name"]
-                ]
-                about_info = await get_userinfo(session, usernames)
-                logger.info(f"Retrieved about info for {len(about_info)} users")
-                for user, info in about_info.items():
-                    try:
-                        if info["about_profile"]["account_based_in"] == "China":
-                            if user not in userset:
-                                record = {"username": user, "info": info}
-                                f.write(json.dumps(record) + "\n")
-                                f.flush()
-                                userset.add(user)
-                                hit += 1
-                                logger.debug(f"Found China-based account: {user}")
-                            if user not in queue:
-                                queue.append(user)
-                    except KeyError:
-                        pass
-                if max_hit > 0 and hit >= max_hit:
-                    logger.info(f"Reached max hit limit of {max_hit}. Stopping.")
+                rate, (current_id, cursor) = queue.get()
+                logger.info(f"Processing: {current_id} ({-rate:.2%})")
+                await expand_user(session, f, current_id, cursor, sample=False)
+                if MAX_HIT > 0 and len(userset) >= MAX_HIT:
+                    logger.info(f"Reached max hit limit of {MAX_HIT}. Stopping.")
                     break
                 logger.info(
-                    f"Queue size: {len(queue)}, Total users found: {len(userset)}"
+                    f"Queue size: {len(queue.queue)}, Total users found: {len(userset)}"
                 )
 
 
