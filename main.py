@@ -9,6 +9,7 @@ from config import *
 from loguru import logger
 from queue import PriorityQueue
 from aiolimiter import AsyncLimiter
+from random import random
 
 cache = SQLiteBackend("cache.db")
 # sem = asyncio.Semaphore(10)
@@ -25,33 +26,25 @@ async def controlled_get(session, url, **kwargs):
                 return await resp.json()
 
 
-async def get_followings(session, username, maxlen=400, cursor=None, sample=False):
+async def get_followings(session, username, cursor=None):
     headers = {
         "x-rapidapi-key": KEY,
         "x-rapidapi-host": "twitter-api45.p.rapidapi.com",
     }
     url = "https://twitter-api45.p.rapidapi.com/following.php"
-    followings = []
-    while True:
-        params = {"screenname": username}
-        if cursor:
-            params["cursor"] = cursor
-        try:
-            data = await controlled_get(session, url, headers=headers, params=params)
-        except Exception as e:
-            logger.warning(f"Error fetching followings: {e}")
-            break
-        if data.get("status") != "ok":
-            break
-        followings.extend(data.get("following", []))
-        cursor = data.get("next_cursor", None)
-        if (
-            not data.get("more_users")
-            or (maxlen > 0 and len(followings) >= maxlen)
-            or sample
-        ):
-            break
-    return followings, cursor
+    params = {"screenname": username}
+    if cursor is not None:
+        params["cursor"] = cursor
+    try:
+        data = await controlled_get(session, url, headers=headers, params=params)
+    except Exception as e:
+        logger.warning(f"Error fetching followings: {e}")
+        return [], False
+    if data.get("status") != "ok":
+        logger.warning(f"Error status code: {data.get('status')}")
+        return [], False
+    cursor = data.get("next_cursor", False)
+    return data.get("following", []), cursor
 
 
 async def get_userinfo(session, usernames):
@@ -107,15 +100,11 @@ def init():
     logger.info(f"Loaded {len(userset)} existing users from {OUTPUT_FILE}")
 
 
-async def expand_user(session, file, username, cursor, sample=False):
+async def expand_user(session, file, username, cursor=None, sample=False):
     global queue, userset
 
-    followings, cursor = await get_followings(
-        session, username, maxlen=MAX_FOLLOWINGS, cursor=cursor, sample=sample
-    )
-    n_followings = len(followings)
+    followings, cursor = await get_followings(session, username, cursor=cursor)
     usernames = [user["screen_name"] for user in followings if user["screen_name"]]
-    n_usernames = len(usernames)
     about_info = await get_userinfo(session, usernames)
     n_about_info = len(about_info)
     n_hit = n_new = 0
@@ -123,15 +112,13 @@ async def expand_user(session, file, username, cursor, sample=False):
 
     async def expand_and_enqueue(user: str):
         try:
-            tot, hit, user_cursor = await expand_user(
-                session, file, user, None, sample=True
-            )
-            rate = hit / tot if tot > 0 else 0
+            rate, user_cursor = await expand_user(session, file, user, sample=True)
         except Exception as e:
             logger.warning(f"Error expanding user {user}: {e}")
             return
-        queue.put((-rate, (user, user_cursor)))
-        logger.debug(f"Enqueued {user}, priority: {rate:.2%}")
+        if user_cursor is not False:
+            queue.put((-rate, (user, user_cursor)))
+            logger.debug(f"Enqueued {user}, priority: {rate:.2%}")
 
     for user, info in about_info.items():
         try:
@@ -145,16 +132,20 @@ async def expand_user(session, file, username, cursor, sample=False):
                     n_new += 1
                     logger.debug(f"✅ Found new China-based account: {user}")
                     # only on new accounts
-                    exists_queue = any(user == item[1][0] for item in queue.queue)
-                    if not sample and not exists_queue:
+                exists_queue = any(user == item[1][0] for item in queue.queue)
+                if not sample:
+                    if not exists_queue or random() < 0.2:
                         expand_tasks.append(expand_and_enqueue(user))
         except KeyError:
             pass
-
     if expand_tasks:
         await asyncio.gather(*expand_tasks)
 
-    return n_about_info, n_hit, cursor
+    rate = n_hit / n_about_info if n_about_info > 0 else 0.0
+    if not sample and cursor is not False:
+        queue.put((-rate, (username, cursor)))
+
+    return rate, cursor
 
 
 async def main():
