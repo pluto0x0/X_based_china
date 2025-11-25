@@ -131,7 +131,8 @@ async def expand_user(session, file, username, cursor=None, sample=False):
                     userset.add(user)
                     n_new += 1
                     logger.debug(f"✅ Found new China-based account: {user}")
-                    # only on new accounts
+                else:
+                    logger.debug(f"❗ Duplicate account: {user}")
                 exists_queue = any(user == item[1][0] for item in queue.queue)
                 if not sample:
                     if not exists_queue or random() < 0.2:
@@ -141,7 +142,7 @@ async def expand_user(session, file, username, cursor=None, sample=False):
     if expand_tasks:
         await asyncio.gather(*expand_tasks)
 
-    rate = n_hit / n_about_info if n_about_info > 0 else 0.0
+    rate = n_new / n_about_info if n_about_info > 0 else 0.0 # istead of n_hit
     if not sample and cursor is not False:
         queue.put((-rate, (username, cursor)))
 
